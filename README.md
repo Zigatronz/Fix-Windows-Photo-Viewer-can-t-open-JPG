@@ -18,13 +18,13 @@ Here is how to fix the Windows Photo Viewer problem.
   - Refer download below
 
 # Download
-  [Download Fix JPG]()
+  [Download Fix JPG](https://github.com/Zigatronz/Fix-Windows-Photo-Viewer-can-t-open-JPG/releases/tag/v1.0)
 
 # How to use
- - Simply **run `Fix JPG.exe`**
- - Later `Fix JPG.exe` will create you a folder called `ToFix`
+ - Simply **run `FixJPG.exe`**
+ - Later `FixJPG.exe` will create you a folder called `ToFix`
  - Drop all **JPG files** you want to fix **into `ToFix` folder**
- - **Run `Fix JPG.exe`** again
+ - **Run `FixJPG.exe`** again
  - You're done
 
  # How it's work
