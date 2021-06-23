@@ -23,7 +23,7 @@ Here is how to fix the Windows Photo Viewer problem.
 # How to use
  - Simply **run** `FixJPG.exe`
  - Later `FixJPG.exe` will create you a folder called `ToFix`
- - Drop all **JPG files** you want to fix **into ToFix folder**
+ - Drop all **JPG files** you want to fix **into `ToFix` folder**
  - **Run** `FixJPG.exe` again
  - You're done
 
