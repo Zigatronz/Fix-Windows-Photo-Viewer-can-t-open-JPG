@@ -18,18 +18,17 @@ Here is how to fix the Windows Photo Viewer problem.
   - Refer download below
 
 # Download
-  [Download FixJPG here](https://github.com/Zigatronz/Fix-Windows-Photo-Viewer-can-t-open-JPG/releases/tag/v1.1)
+  [Download FixJPG here](https://github.com/Zigatronz/Fix-Windows-Photo-Viewer-can-t-open-JPG/releases/tag/v1.3)
 
 # How to use
  - Simply **run** `FixJPG.exe`
- - Later `FixJPG.exe` will create you a folder called `ToFix`
- - Drop all **JPG files** you want to fix **into `ToFix` folder**, Then click **OK**
+ - **Drag and Drop** all **files** and **folders** contain **JPG files** to `FixJPG`'s window, then click **Scan**
  - Wait for **scanning JPG files**, all files that **need to be process** will be **list**
- - Click **Start**
+ - **Check All** and **Start**
  - When it's done, **summary will pop-up**
  - You're done
 
  # How it's work
- - Search for `ICC_PROFILE` only for `.jpg` in `ToFix` folder recursively, list it
+ - Search for `ICC_PROFILE` only for `.jpg` in `path list` recursively, list it
  - Wait for user conformation
  - Replace all `ICC_PROFILE` to `ICC_PROFILX` by writing **only 1 byte** at each file

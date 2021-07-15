@@ -1,54 +1,94 @@
 
 ; Initialize
-TotalFiles := 0
 TargetedFiles := []
 ProgramTitle := "Fix JPG"
 FilesWriteFailed := []
-IfNotExist, % A_ScriptDir . "\ToFix"
-{
-    FileCreateDir, % A_ScriptDir . "\ToFix"
-    MsgBox, 1, % ProgramTitle, % "Put all JPG file that you wish to fix in 'ToFix' folder.`n`nPress OK when you done.`nPress Cancel to exit."
-    IfMsgBox, Cancel
-    {
-        FileRemoveDir, % A_ScriptDir . "\ToFix", 0
-        ExitApp
-    }
-}
+
+; Drag and Drop
+Gui, Margin, 5, 5
+Gui, Add, Text, w650 h20 Center, % "Drag and drop your JPG folder(s) here"
+Gui, Add, ListView, w650 h200 vListView, Path
+LV_ModifyCol(1,635)
+Gui, Add, Button, x275 y235 w100 h20, Scan
+Gui, Show, , % ProgramTitle
+Menu PopRow, Add, Remove folder, PopRow
+Return
+
 ; Start read
-Loop, Files, % A_ScriptDir . "\ToFix\*.jpg", FR
-    TotalFiles ++
+ButtonScan:
+Path := LV_GetArray()
+Gui, Destroy
+TotalFiles := GetTotalJPG(Path)
 Gui, New,, % ProgramTitle . " - Scanning"
 Gui, Margin, 10, 10
 Gui, Add, Text, w500 vCurrentProcess
 Gui, Add, Progress, % "w500 h20 vProgress Range0-" . TotalFiles, 0
 Gui, Show
-Loop, Files, % A_ScriptDir . "\ToFix\*.jpg", FR
+for i,c in Path
 {
-    GuiControl, Text, CurrentProcess, % SubStr(A_LoopFileFullPath, StrLen(A_ScriptDir . "\ToFix\")+1)
-    GuiControl, , Progress, +1
-    FileRead, data, *c %A_LoopFileFullPath%
-    Loop, 1000 ; set max read bytes to save performance if fails to find 'ICC_PROFILE'
-    {
-        if (StrGet(&data + int2hex(A_Index), 11, "UTF-8") == "ICC_PROFILE"){
-            TargetedFiles.Push([A_LoopFileFullPath, A_Index+10])
-            Break
+    if (InStr(FileExist(c), "D")){
+        Loop, Files, % c . "\*.jpg", FR
+        {
+            GuiControl, Text, CurrentProcess, % "Reading - " . GetFilename(A_LoopFileFullPath)
+            GuiControl, , Progress, +1
+            FileRead, data, *c %A_LoopFileFullPath%
+            Loop, 1000 ; set max read bytes to save performance if fails to find 'ICC_PROFILE'
+            {
+                if (StrGet(&data + int2hex(A_Index), 11, "UTF-8") == "ICC_PROFILE"){
+                    TargetedFiles.Push([A_LoopFileFullPath, A_Index+10])
+                    Break
+                }
+            }
+        }
+    }Else{
+        if (GetExt(c) == "jpg"){
+            GuiControl, Text, CurrentProcess, % "Reading - " . GetFilename(c)
+            GuiControl, , Progress, +1
+            FileRead, data, *c %c%
+            Loop, 1000 ; set max read bytes to save performance if fails to find 'ICC_PROFILE'
+            {
+                if (StrGet(&data + int2hex(A_Index), 11, "UTF-8") == "ICC_PROFILE"){
+                    TargetedFiles.Push([c, A_Index+10])
+                    Break
+                }
+            }
         }
     }
 }
-; Gui conformation
-Gui, New,, % ProgramTitle
-Gui, Margin, 10, 10
-Gui, Add, ListBox, w600 h200, % ArrayToList(TargetedFiles)
-Gui, Add, Button, x250 w100 h20, Start
+; check list conformation
+Gui, Destroy
+Gui, New, +HwndgHWND, % ProgramTitle
+Gui, Margin, 5, 5
+Gui, Add, Text, w650 h20 Center, Select which file you want to convert:
+Gui, Add, ListView, w650 h200 Checked vListView, Path|Address
+Gui, Add, Checkbox, x10 y235 w225 h20 vCheckAll gCheckAll, Check All
+Gui, Add, Button, x275 y235 w100 h20, Start
+for i,c in TargetedFiles
+    LV_Add("+Check", c[1], int2hex(c[2]))
+LV_ModifyCol()
+LV_ModifyCol(2, 120)
 Gui, Show
+WinActive := True
+Loop
+{
+    if (LV_GetChecked("ahk_id " gHWND).Length() == TargetedFiles.Length())
+        GuiControl, , CheckAll, 1
+    Else
+        GuiControl, , CheckAll, 0
+    Sleep % LinearInterpolation(250,1000,TargetedFiles.Length()/500)
+    (!WinActive)?Break
+}
 Return
 ; Start write
 ButtonStart:
+WinActive := False
+TargetedFiles := RemoveUnchecked(TargetedFiles, "ahk_id" . gHWND,,TotalFileSkip)
 Gui, Destroy
 Gui, New,, % ProgramTitle . " - Working"
 Gui, Margin, 10, 10
 Gui, Add, Text, w500 vCurrentProcess
 Gui, Add, Progress, % "w500 h20 vProgress Range0-" . TargetedFiles.Length(), 0
+Gui, Add, Text, w500 vCredit cAAAAAA, program by ZIGATRONZ
 Gui, Show
 for i,c in TargetedFiles
 {
@@ -58,9 +98,9 @@ for i,c in TargetedFiles
     if (Write != 1)
         FilesWriteFailed.Push(c)
 }
-; Report
+; Result
 GuiControl, Text, CurrentProcess, % "Complete!"
-MsgBox, % "Program Complete!`n`nTotal JPG converted: " . TargetedFiles.Length() . "`nTotal Ignore: " . (TotalFiles - TargetedFiles.Length()) . "`nTotal Failed: " . FilesWriteFailed.Length()
+MsgBox, 64, % ProgramTitle . " - Result", % "Program Complete!`n`nTotal JPG Converted: " . TargetedFiles.Length() . "`nTotal JPG Skipped: " . TotalFileSkip . "`nTotal JPG Ignored: " . (TotalFiles - TargetedFiles.Length() - TotalFileSkip) . "`nTotal Failed: " . FilesWriteFailed.Length()
 Gui, Destroy
 if (FilesWriteFailed.Length() > 0)
     FileAppend, % ArrayToList(FilesWriteFailed, "Unable to write: ", " at index :"), %ProgramTitle% - Convert Error.log
@@ -68,6 +108,77 @@ if (FilesWriteFailed.Length() > 0)
 GuiEscape:
 GuiClose:
 ExitApp
+
+;Drag and drop
+GuiDropFiles:
+    Loop, Parse, A_GuiEvent, `n
+    {
+        if (InStr(FileExist(A_LoopField), "D")){
+            LV_Add(, A_LoopField)
+        }Else{
+            LV_Add(, A_LoopField)
+        }
+    }
+Return
+
+GuiContextMenu:
+if (A_GuiControl != "ListView")
+    Return
+SelectedRow := A_EventInfo
+Menu, PopRow, Show, %A_GuiX%, %A_GuiY%
+Return
+
+PopRow:
+    Loop
+    {
+        if (Pos:=LV_GetNext(0))
+            LV_Delete(Pos)
+        Else
+            Break
+    }
+Return
+
+;functions
+
+RemoveUnchecked(FileList, WinTitle, ClassNN:="SysListView321", ByRef TotalSkip:=0){
+    local Pos:=1, out:=[], breakOnNoJob:=0
+    ControlGet, LV_Items, List,, % ClassNN, % WinTitle
+    While Pos
+    {
+        Pos := RegExMatch(LV_Items, "`am)(^.*?$)", Line, Pos + StrLen(Line))
+        SendMessage, 0x102c, A_Index-1, 0x2000, % ClassNN, % WinTitle
+        ErrorLevel?out.Push([SubStr(Line, 1, InStr(Line, A_Tab)-1), FileList[A_Index][2]])
+        (Pos == 1)?breakOnNoJob ++
+        (breakOnNoJob>=10)?Pos:=0
+    }
+    TotalSkip := FileList.Length() - out.Length()
+    Return out
+}
+
+LV_GetChecked(WinTitle, ClassNN:="SysListView321"){
+    local Pos:=1, Item:=[]
+    ControlGet, LV_Items, List,, % ClassNN, % WinTitle
+    While Pos
+    {
+        Pos := RegExMatch(LV_Items, "`am)(^.*?$)", Line, Pos + StrLen(Line))
+        SendMessage, 0x102c, A_Index-1, 0x2000, % ClassNN, % WinTitle
+        ErrorLevel?Item.Push(SubStr(Line, 1, InStr(Line, A_Tab)-1))
+    }
+    Return Item
+}
+
+LV_GetArray(){
+    out := []
+    Loop
+    {
+        if (LV_GetText(Text, A_Index, 1)){
+            out.Push(Text)
+        }Else{
+            Break
+        }
+    }
+    Return out
+}
 
 ArrayToList(array, sStr:="", mStr:="", eStr:=""){
     local list
@@ -114,6 +225,47 @@ BinWrite(file, data, n=0, offset=0){
     IfEqual h,-1, SetEnv, ErrorLevel, -2
     IfNotEqual t,,SetEnv, ErrorLevel, % t
     Return TotalWritten
+}
+
+LinearInterpolation(a,b,t){
+    Return a+(b-a)*t
+}
+
+CheckAll:
+    GuiControlGet, CheckBoxAll, , CheckAll
+    if (CheckBoxAll)
+        Loop, % LV_GetCount()
+            LV_Modify(A_Index, "+Check")
+    Else
+        Loop, % LV_GetCount()
+            LV_Modify(A_Index, "-Check")
+Return
+
+GetFilename(path){
+    SplitPath, path, out
+    Return out
+}
+
+GetExt(path){
+    SplitPath, path, , , out
+    StringLower, out, out
+    Return out
+}
+
+GetTotalJPG(Arr){
+    count := 0
+    for i,c in Arr
+    {
+        if (InStr(FileExist(c), "D")){
+            Loop, Files, % c . "\*.jpg", FR
+                count ++
+        }Else{
+            if (GetExt(c) == "jpg"){
+                count ++
+            }
+        }
+    }
+    Return count
 }
 
 ; Credit: jNizM
