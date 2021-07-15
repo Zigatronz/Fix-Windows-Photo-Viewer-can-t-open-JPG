@@ -6,7 +6,7 @@ FilesWriteFailed := []
 
 ; Drag and Drop
 Gui, Margin, 5, 5
-Gui, Add, Text, w650 h20 Center, % "Drag and drop your JPG folder(s) here"
+Gui, Add, Text, w650 h20 Center, % "Drag and drop your JPG files and folders here"
 Gui, Add, ListView, w650 h200 vListView, Path
 LV_ModifyCol(1,635)
 Gui, Add, Button, x275 y235 w100 h20, Scan
