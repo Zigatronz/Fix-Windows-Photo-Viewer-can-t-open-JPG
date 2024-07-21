@@ -1,8 +1,11 @@
 
+; AHK v1.1.37.01
+
 ; Initialize
 TargetedFiles := []
 ProgramTitle := "Fix JPG"
 FilesWriteFailed := []
+JPGExts := ["jpg", "jpeg"]
 
 ; Drag and Drop
 Gui, Margin, 5, 5
@@ -24,34 +27,38 @@ Gui, Margin, 10, 10
 Gui, Add, Text, w500 vCurrentProcess
 Gui, Add, Progress, % "w500 h20 vProgress Range0-" . TotalFiles, 0
 Gui, Show
+
+CheckFile(file_path){
+    FileRead, data, *c %file_path%
+    Loop, 1000 ; set max read bytes to save performance if fails to find 'ICC_PROFILE'
+    {
+        if (StrGet(&data + int2hex(A_Index), 11, "UTF-8") == "ICC_PROFILE"){
+            return [file_path, A_Index+10]
+        }
+    }
+    return ""
+}
+
 for i,c in Path
 {
     if (InStr(FileExist(c), "D")){
-        Loop, Files, % c . "\*.jpg", FR
+        Loop, Files, % c . "\*.*", FR
         {
-            GuiControl, Text, CurrentProcess, % "Reading - " . GetFilename(A_LoopFileFullPath)
-            GuiControl, , Progress, +1
-            FileRead, data, *c %A_LoopFileFullPath%
-            Loop, 1000 ; set max read bytes to save performance if fails to find 'ICC_PROFILE'
-            {
-                if (StrGet(&data + int2hex(A_Index), 11, "UTF-8") == "ICC_PROFILE"){
-                    TargetedFiles.Push([A_LoopFileFullPath, A_Index+10])
-                    Break
-                }
+            if (GetExt(A_LoopFileFullPath) in JPGExts){
+                GuiControl, Text, CurrentProcess, % "Reading - " . GetFilename(A_LoopFileFullPath)
+                GuiControl, , Progress, +1
+    
+                fileFound := CheckFile(A_LoopFileFullPath)
+                (fileFound != "") ? TargetedFiles.Push(fileFound) : ""
             }
         }
     }Else{
-        if (GetExt(c) == "jpg"){
+        if (GetExt(c) in JPGExts){
             GuiControl, Text, CurrentProcess, % "Reading - " . GetFilename(c)
             GuiControl, , Progress, +1
-            FileRead, data, *c %c%
-            Loop, 1000 ; set max read bytes to save performance if fails to find 'ICC_PROFILE'
-            {
-                if (StrGet(&data + int2hex(A_Index), 11, "UTF-8") == "ICC_PROFILE"){
-                    TargetedFiles.Push([c, A_Index+10])
-                    Break
-                }
-            }
+
+            fileFound := CheckFile(c)
+            (fileFound != "") ? TargetedFiles.Push(fileFound) : ""
         }
     }
 }
@@ -253,14 +260,19 @@ GetExt(path){
 }
 
 GetTotalJPG(Arr){
+    global JPGExts
     count := 0
     for i,c in Arr
     {
         if (InStr(FileExist(c), "D")){
-            Loop, Files, % c . "\*.jpg", FR
-                count ++
+            Loop, Files, % c . "\*.*", FR
+            {
+                if (GetExt(A_LoopFileFullPath) in JPGExts){
+                    count ++
+                }
+            }
         }Else{
-            if (GetExt(c) == "jpg"){
+            if (GetExt(c) in JPGExts){
                 count ++
             }
         }

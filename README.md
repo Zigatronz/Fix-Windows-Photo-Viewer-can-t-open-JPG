@@ -30,6 +30,6 @@ Here is how to fix the Windows Photo Viewer problem.
  - You're done
 
  # How it's work
- - Search for `ICC_PROFILE` only for `.jpg` in `path list` recursively, list it
+ - Search for `ICC_PROFILE` in `.jpg` or `.jpeg` files inside `path list` recursively, list it
  - Wait for user conformation
  - Replace all `ICC_PROFILE` to `ICC_PROFILX` by writing **only 1 byte** at each file
